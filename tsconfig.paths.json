@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/assets/*": ["assets/*"],
+      "@/components/*": ["components/*"],
+      "@/data/*": ["data/*"],
+      "@/layouts/*": ["layouts/*"],
+      "@/lib/*": ["lib/*"],
+      "@/styles/*": ["styles/*"],
+      "@/media/*": ["media/*"],
+      "@/config/*": ["config/*"],
+      "@/types/*": ["types/*"],
+      "@/hooks/*": ["lib/Hooks/*"]
+    }
+  }
+}
