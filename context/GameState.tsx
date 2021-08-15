@@ -51,6 +51,8 @@ interface ISetLevelAction extends ReducerAction {
   type: ReducerActionKind.SET_CURRENT_LEVEL;
   payload: {
     level: GAME_LEVELS;
+
+    restart: (newExpiryTimestamp: number, newAutoStart?: boolean) => void;
   };
 }
 
@@ -138,9 +140,21 @@ const gameStateReducer = (
   state: IGameState,
   action: ReducerActionsSet
 ): IGameState => {
+  const { restart } = action.payload;
   switch (action.type) {
     case ReducerActionKind.SET_CURRENT_LEVEL:
-      return { ...getStateForLevel(state, action.payload.level) };
+      const stateForCurrentLevel = getStateForLevel(
+        state,
+        action.payload.level
+      );
+
+      restart!(
+        new Date().setSeconds(
+          new Date().getSeconds() + stateForCurrentLevel.timeLimit
+        ),
+        false
+      );
+      return stateForCurrentLevel;
 
     case ReducerActionKind.SET_GAME_OVER:
       return { ...state, isGameOver: true };
@@ -149,7 +163,6 @@ const gameStateReducer = (
       return state.hasWon ? onLevelWin(state, action.payload.restart) : state;
 
     case ReducerActionKind.REPLAY_LEVEL:
-      const { restart } = action.payload;
       const { timeLimit, movesLimit } = getConstraints(
         state.currentLevel as GAME_LEVELS
       );
@@ -344,7 +357,7 @@ function GameStateProvider({ ...props }) {
   const setCurrentLevel = (level: GAME_LEVELS) => {
     actionsDispatcher({
       type: ReducerActionKind.SET_CURRENT_LEVEL,
-      payload: { level },
+      payload: { level, restart },
     });
   };
 
