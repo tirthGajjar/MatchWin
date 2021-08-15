@@ -5,11 +5,12 @@ import {
   getConstraints,
 } from "@/utils/generate-cards";
 import useTimer from "hooks/useTimer";
-import React, { Dispatch } from "react";
-import { GAME_LEVELS } from "../utils/generate-cards";
+import React, { Dispatch, useCallback } from "react";
+import useLocalStorage from "../hooks/useLocalStorage";
+import { GAME_LEVELS, getStateForLevel } from "../utils/generate-cards";
 
 export interface IGameState {
-  currentLevel: number;
+  currentLevel: GAME_LEVELS;
   passedLevels: number;
   movesLeft: number;
   currentScore: number;
@@ -33,7 +34,8 @@ export enum ReducerActionKind {
   CHANGE_TO_PREVIOUS_LEVEL = "CHANGE_TO_PREVIOUS_LEVEL",
   DECREMENT_MOVES_LEFT = "DECREMENT_MOVES_LEFT",
   RESTART = "RESTART",
-  SET_PASSED_LEVEL = "SET_PASSED_LEVEL",
+  MOVE_TO_NEXT_LEVEL = "MOVE_TO_NEXT_LEVEL",
+  REPLAY_LEVEL = "REPLAY_LEVEL",
   MAKE_A_MOVE = "MAKE_A_MOVE",
   RESET_GAME = "RESET_GAME",
 }
@@ -47,14 +49,14 @@ interface ReducerAction {
 interface IChangeToNextLevelAction extends ReducerAction {
   type: ReducerActionKind.CHANGE_TO_NEXT_LEVEL;
   payload: {
-    newStage: number;
+    newStage: GAME_LEVELS;
   };
 }
 
 interface IChangeToPrevLevelAction extends ReducerAction {
   type: ReducerActionKind.CHANGE_TO_PREVIOUS_LEVEL;
   payload: {
-    newStage: number;
+    newStage: GAME_LEVELS;
   };
 }
 
@@ -66,10 +68,17 @@ interface IResetGameAction extends ReducerAction {
   type: ReducerActionKind.RESET_GAME;
 }
 
-interface ISetPassedLevelAction extends ReducerAction {
-  type: ReducerActionKind.SET_PASSED_LEVEL;
+interface IMoveToNextLevelAction extends ReducerAction {
+  type: ReducerActionKind.MOVE_TO_NEXT_LEVEL;
   payload: {
-    newPassedLevel: number;
+    restart: (newExpiryTimestamp: number, newAutoStart?: boolean) => void;
+  };
+}
+
+interface IReplayLevelAction extends ReducerAction {
+  type: ReducerActionKind.REPLAY_LEVEL;
+  payload: {
+    restart: (newExpiryTimestamp: number, newAutoStart?: boolean) => void;
   };
 }
 
@@ -80,6 +89,7 @@ interface IMakeMoveAction extends ReducerAction {
     uniqueId?: number | string;
     restart: (newExpiryTimestamp: number, newAutoStart?: boolean) => void;
     start?: () => void;
+    pause?: () => void;
   };
 }
 
@@ -87,8 +97,9 @@ export type ReducerActionsSet =
   | IChangeToNextLevelAction
   | IChangeToPrevLevelAction
   | ISetMovesLeftAction
-  | ISetPassedLevelAction
+  | IMoveToNextLevelAction
   | IMakeMoveAction
+  | IReplayLevelAction
   | IResetGameAction;
 
 const onLevelWin = (
@@ -107,15 +118,8 @@ const onLevelWin = (
   return {
     ...state,
     currentLevel: newCurrentLevel,
-    currentScore: calculateScore(
-      state.movesLimit,
-      state.movesLeft,
-      state.currentLevel,
-      state.currentScore
-    ),
     cards: generateCards({ level: newCurrentLevel, difficulty: "EASY" }),
     revealedCards: {},
-    passedLevels: newCurrentLevel - 1,
     isGameOver: false,
     timeLimit,
     movesLimit,
@@ -124,7 +128,7 @@ const onLevelWin = (
   };
 };
 
-const counterReducer = (
+const gameStateReducer = (
   state: IGameState,
   action: ReducerActionsSet
 ): IGameState => {
@@ -135,11 +139,35 @@ const counterReducer = (
     case ReducerActionKind.CHANGE_TO_PREVIOUS_LEVEL:
       return { ...state, currentLevel: action.payload.newStage };
 
-    case ReducerActionKind.SET_PASSED_LEVEL:
-      return { ...state, passedLevels: action.payload.newPassedLevel };
+    case ReducerActionKind.MOVE_TO_NEXT_LEVEL:
+      return state.hasWon ? onLevelWin(state, action.payload.restart) : state;
+
+    case ReducerActionKind.REPLAY_LEVEL:
+      const { restart } = action.payload;
+      const { timeLimit, movesLimit } = getConstraints(
+        state.currentLevel as GAME_LEVELS
+      );
+
+      restart!(
+        new Date().setSeconds(new Date().getSeconds() + timeLimit),
+        false
+      );
+      return {
+        ...state,
+        cards: generateCards({
+          difficulty: "EASY",
+          level: state.currentLevel as GAME_LEVELS,
+        }),
+        revealedCards: {},
+        timeLimit,
+        movesLimit,
+        movesLeft: movesLimit,
+        hasWon: false,
+        isGameOver: false,
+      };
 
     case ReducerActionKind.MAKE_A_MOVE:
-      const { cardId, uniqueId, restart, start } = action.payload;
+      const { cardId, uniqueId, start, pause } = action.payload;
       const updatedCardIndex = state.cards.findIndex(
         (card) => card.uniqueId === uniqueId
       );
@@ -156,18 +184,33 @@ const counterReducer = (
         start!();
       }
 
+      const hasWon = !state.hasWon ? state.revealedCards[cardId] : false;
+
+      if (hasWon) {
+        pause!();
+      }
+
       const newState = {
         ...state,
         cards: newCards,
         revealedCards: { ...state.revealedCards, [cardId]: true },
-        hasWon: !state.hasWon ? state.revealedCards[cardId] : false,
+        hasWon,
         movesLeft: newMovesLeft,
-        isGameOver: newMovesLeft > 0 ? state.isGameOver : false,
+        isGameOver: newMovesLeft > 0 ? state.isGameOver : !hasWon,
+        passedLevels:
+          hasWon && state.currentLevel > state.passedLevels
+            ? Math.min(10, state.currentLevel)
+            : state.passedLevels,
+        currentScore: hasWon
+          ? calculateScore(
+              state.movesLimit,
+              state.movesLeft,
+              state.currentLevel,
+              state.currentScore
+            )
+          : state.currentScore,
       };
 
-      if (newState.hasWon) {
-        return onLevelWin(newState, restart);
-      }
       return newState;
 
     case ReducerActionKind.RESET_GAME:
@@ -210,15 +253,39 @@ const GameContext = React.createContext<{
     uniqueId?: string | number | undefined;
   }) => void;
   resetGame?: () => void;
+  moveToNextLevel?: () => void;
+  replayLevel?: () => void;
 }>({ gameState: initialState });
 
 function GameStateProvider({ ...props }) {
-  const [gameState, actionsDispatcher] = React.useReducer(
-    counterReducer,
-    initialState
+  const [savedState, saveState] = useLocalStorage("GAME-STATE", {
+    passedLevels: 0,
+    currentScore: 0,
+  });
+
+  const reducerLocalStorage = useCallback(
+    (state, action) => {
+      const newState = gameStateReducer(state, action);
+
+      saveState({
+        passedLevels: newState.passedLevels,
+        currentScore: newState.currentScore,
+      });
+
+      return newState;
+    },
+    [saveState]
   );
 
-  const { seconds, minutes, restart, start } = useTimer({
+  const [gameState, actionsDispatcher] = React.useReducer(reducerLocalStorage, {
+    ...getStateForLevel(
+      initialState,
+      (savedState?.passedLevels + 1) as GAME_LEVELS
+    ),
+    ...savedState,
+  });
+
+  const { seconds, minutes, restart, start, pause } = useTimer({
     expiryTimestamp: new Date().setSeconds(
       new Date().getSeconds() + gameState.timeLimit
     ),
@@ -240,7 +307,7 @@ function GameStateProvider({ ...props }) {
   }) =>
     actionsDispatcher({
       type: ReducerActionKind.MAKE_A_MOVE,
-      payload: { cardId, uniqueId, restart, start },
+      payload: { cardId, uniqueId, restart, start, pause },
     });
 
   const resetGame = () => {
@@ -251,7 +318,28 @@ function GameStateProvider({ ...props }) {
     actionsDispatcher({ type: ReducerActionKind.RESET_GAME });
   };
 
-  const value = { gameState, actionsDispatcher, makeAMove, resetGame };
+  const moveToNextLevel = () => {
+    actionsDispatcher({
+      type: ReducerActionKind.MOVE_TO_NEXT_LEVEL,
+      payload: { restart },
+    });
+  };
+
+  const replayLevel = () => {
+    actionsDispatcher({
+      type: ReducerActionKind.REPLAY_LEVEL,
+      payload: { restart },
+    });
+  };
+
+  const value = {
+    gameState,
+    actionsDispatcher,
+    makeAMove,
+    resetGame,
+    moveToNextLevel,
+    replayLevel,
+  };
   return <GameContext.Provider value={value} {...props} />;
 }
 

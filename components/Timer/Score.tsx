@@ -8,7 +8,7 @@ interface Props {
 const Score = ({ score }: Props) => {
   return (
     <div className="space-y-2">
-      <div className="rounded-md  font-medium text-gray-200 text-base">
+      <div className="rounded-md font-medium text-gray-200 text-base">
         Score:
       </div>
       <div className="flex items-center justify-start">

@@ -1,4 +1,7 @@
-import { QuestionMarkCircleIcon } from "@heroicons/react/outline";
+import {
+  LockClosedIcon,
+  QuestionMarkCircleIcon,
+} from "@heroicons/react/outline";
 import clsx from "clsx";
 import Image from "next/image";
 import React from "react";
@@ -6,10 +9,16 @@ import React from "react";
 interface Props {
   src: string;
   isRevealed: boolean;
+  isDisabled: boolean;
   setRevealed: (x: boolean) => void;
 }
 
-const PlayCard = ({ src, setRevealed, isRevealed }: Props) => {
+const PlayCard = ({
+  src,
+  setRevealed,
+  isRevealed,
+  isDisabled = false,
+}: Props) => {
   function revealCard() {
     if (!isRevealed) {
       setRevealed(true);
@@ -26,7 +35,7 @@ const PlayCard = ({ src, setRevealed, isRevealed }: Props) => {
         "transform-preserve-3d w-full h-full cursor-pointer relative transition-transform duration-1000 aspect-w-2 aspect-h-3 rounded-md shadow-xl",
         "outline-none focus:ring-2 ring-offset-2 ring-emerald-600"
       )}
-      disabled={isRevealed}
+      disabled={isDisabled || isRevealed}
       onClick={revealCard}
     >
       {!isRevealed ? (
@@ -35,7 +44,11 @@ const PlayCard = ({ src, setRevealed, isRevealed }: Props) => {
             "absolute rounded-md w-full h-full  flex items-center justify-center bg-gradient-to-tr from-cool-gray-100 to-cool-gray-300"
           )}
         >
-          <QuestionMarkCircleIcon className="h-10 w-10 text-gray-400" />
+          {isDisabled ? (
+            <LockClosedIcon className="h-10 w-10 text-gray-400" />
+          ) : (
+            <QuestionMarkCircleIcon className="h-10 w-10 text-gray-400" />
+          )}
         </div>
       ) : (
         <Image

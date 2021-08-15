@@ -1,4 +1,5 @@
 import { shuffle, uniqueId } from "lodash";
+import { IGameState } from "../context/GameState";
 import { links } from "./image-links";
 
 type PrependNextNum<A extends Array<unknown>> = A["length"] extends infer T
@@ -96,17 +97,32 @@ export const calculateScore = (
   level: number,
   previousScore: number
 ) => {
-  console.log(
-    Math.round(
-      (level * previousScore + ((movesLeft + 2) / movesLimit) * 10) / level > 1
-        ? level + 1
-        : level
-    )
-  );
   const res = Math.round(
     (previousScore +
       ((movesLeft + 2) / movesLimit) * 10 * (level <= 4 ? 1 : 1 + level / 10)) /
       (level === 1 ? 1 : 2)
   );
   return Math.min(10, res);
+};
+
+export const getStateForLevel = (
+  state: IGameState,
+  level: GAME_LEVELS
+): IGameState => {
+  const { timeLimit, movesLimit } = getConstraints(level as GAME_LEVELS);
+
+  return {
+    ...state,
+    cards: generateCards({
+      difficulty: "EASY",
+      level: level,
+    }),
+    revealedCards: {},
+    timeLimit,
+    movesLimit,
+    movesLeft: movesLimit,
+    hasWon: false,
+    isGameOver: false,
+    currentLevel: level,
+  };
 };

@@ -9,7 +9,8 @@ interface Props {
 
 const levelNames = Array.from({ length: 10 }, (x, i) => i + 1);
 
-const Levels = ({ passedLevels = 5, currentLevel = 0 }: Props) => {
+const Levels = ({ passedLevels, currentLevel = 0 }: Props) => {
+  console.log({ passedLevels });
   return (
     <div className="text-white text-base flex flex-col space-y-2">
       <div className="rounded-md font-medium text-gray-200 text-base">
