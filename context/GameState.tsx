@@ -38,6 +38,7 @@ export enum ReducerActionKind {
   REPLAY_LEVEL = "REPLAY_LEVEL",
   MAKE_A_MOVE = "MAKE_A_MOVE",
   RESET_GAME = "RESET_GAME",
+  SET_GAME_OVER = "SET_GAME_OVER",
 }
 
 // An interface for our actions
@@ -68,6 +69,10 @@ interface IResetGameAction extends ReducerAction {
   type: ReducerActionKind.RESET_GAME;
 }
 
+interface ISetGameOverAction extends ReducerAction {
+  type: ReducerActionKind.SET_GAME_OVER;
+}
+
 interface IMoveToNextLevelAction extends ReducerAction {
   type: ReducerActionKind.MOVE_TO_NEXT_LEVEL;
   payload: {
@@ -94,6 +99,7 @@ interface IMakeMoveAction extends ReducerAction {
 }
 
 export type ReducerActionsSet =
+  | ISetGameOverAction
   | ISetLevelAction
   | IChangeToPrevLevelAction
   | ISetMovesLeftAction
@@ -136,8 +142,8 @@ const gameStateReducer = (
     case ReducerActionKind.SET_CURRENT_LEVEL:
       return { ...getStateForLevel(state, action.payload.level) };
 
-    case ReducerActionKind.CHANGE_TO_PREVIOUS_LEVEL:
-      return { ...state, currentLevel: action.payload.newStage };
+    case ReducerActionKind.SET_GAME_OVER:
+      return { ...state, isGameOver: true };
 
     case ReducerActionKind.MOVE_TO_NEXT_LEVEL:
       return state.hasWon ? onLevelWin(state, action.payload.restart) : state;
@@ -185,8 +191,8 @@ const gameStateReducer = (
       }
 
       const hasWon = !state.hasWon ? state.revealedCards[cardId] : false;
-
-      if (hasWon) {
+      const isGameOver = newMovesLeft > 0 ? state.isGameOver : !hasWon;
+      if (hasWon || isGameOver) {
         pause!();
       }
 
@@ -196,7 +202,7 @@ const gameStateReducer = (
         revealedCards: { ...state.revealedCards, [cardId]: true },
         hasWon,
         movesLeft: newMovesLeft,
-        isGameOver: newMovesLeft > 0 ? state.isGameOver : !hasWon,
+        isGameOver,
         passedLevels:
           hasWon && state.currentLevel > state.passedLevels
             ? Math.min(10, state.currentLevel)
@@ -291,7 +297,8 @@ function GameStateProvider({ ...props }) {
     expiryTimestamp: new Date().setSeconds(
       new Date().getSeconds() + gameState.timeLimit
     ),
-    onExpire: () => console.warn("onExpire called"),
+    onExpire: () =>
+      actionsDispatcher({ type: ReducerActionKind.SET_GAME_OVER }),
     autoStart: false,
   });
 
