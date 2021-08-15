@@ -1,8 +1,12 @@
 import Main from "@/components/layout/Main";
-import type { NextPage } from "next";
+import { GameStateProvider } from "context/GameState";
 
-const Home: NextPage = () => {
-  return <Main />;
+const Home = () => {
+  return (
+    <GameStateProvider>
+      <Main />
+    </GameStateProvider>
+  );
 };
 
 export default Home;

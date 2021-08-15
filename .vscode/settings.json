@@ -1,3 +1,5 @@
 {
-  "cSpell.words": ["tailwindcss"]
+  "cSpell.words": ["Orbitron", "headlessui", "heroicons", "tailwindcss"],
+  "WillLuke.nextjs.hasPrompted": true,
+  "exportall.config.folderListener": ["/components/Timer", "/components/Button"]
 }

@@ -1,0 +1,107 @@
+import { useCallback, useReducer } from "react";
+
+interface IHistoryState {
+  past: any[];
+  present: any;
+  future: any[];
+}
+
+// Initial state that we pass into useReducer
+const initialState: IHistoryState = {
+  // Array of previous state values updated each time we push a new state
+  past: [],
+  // Current state value
+  present: null,
+  // Will contain "future" state values if we undo (so we can redo)
+  future: [],
+};
+
+// An enum with all the types of actions to use in our reducer
+enum ReducerActionKind {
+  UNDO = "UNDO",
+  REDO = "REDO",
+  SET = "SET",
+  CLEAR = "CLEAR",
+}
+
+// An interface for our actions
+interface ReducerAction {
+  type: ReducerActionKind;
+  newPresent?: any;
+  initialPresent?: any;
+}
+
+// Our reducer function to handle state changes based on action
+const reducer = (state: IHistoryState, action: ReducerAction) => {
+  const { past, present, future } = state;
+  switch (action.type) {
+    case "UNDO":
+      const previous = past[past.length - 1];
+      const newPast = past.slice(0, past.length - 1);
+      return {
+        past: newPast,
+        present: previous,
+        future: [present, ...future],
+      };
+    case "REDO":
+      const next = future[0];
+      const newFuture = future.slice(1);
+      return {
+        past: [...past, present],
+        present: next,
+        future: newFuture,
+      };
+    case "SET":
+      const { newPresent } = action;
+      if (newPresent === present) {
+        return state;
+      }
+      return {
+        past: [...past, present],
+        present: newPresent,
+        future: [],
+      };
+    case "CLEAR":
+      const { initialPresent } = action;
+      return {
+        ...initialState,
+        present: initialPresent,
+      };
+    default:
+      return state;
+  }
+};
+
+// Hook
+const useHistory = (initialPresent: any) => {
+  const [state, dispatch] = useReducer(reducer, {
+    ...initialState,
+    present: initialPresent,
+  });
+  const canUndo = state.past.length !== 0;
+  const canRedo = state.future.length !== 0;
+  // Setup our callback functions
+  // We memoize with useCallback to prevent unnecessary re-renders
+  const undo = useCallback(() => {
+    if (canUndo) {
+      dispatch({ type: ReducerActionKind.UNDO });
+    }
+  }, [canUndo, dispatch]);
+  const redo = useCallback(() => {
+    if (canRedo) {
+      dispatch({ type: ReducerActionKind.REDO });
+    }
+  }, [canRedo, dispatch]);
+  const set = useCallback(
+    (newPresent) => dispatch({ type: ReducerActionKind.SET, newPresent }),
+    [dispatch]
+  );
+  const clear = useCallback(
+    () => dispatch({ type: ReducerActionKind.CLEAR, initialPresent }),
+    [dispatch, initialPresent]
+  );
+  // If needed we could also return past and future state
+  return { state: state.present, set, undo, redo, clear, canUndo, canRedo };
+};
+
+export default useHistory;
