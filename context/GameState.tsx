@@ -30,7 +30,7 @@ export interface IGameState {
 
 // An enum with all the types of actions to use in our reducer
 export enum ReducerActionKind {
-  CHANGE_TO_NEXT_LEVEL = "CHANGE_TO_NEXT_LEVEL",
+  SET_CURRENT_LEVEL = "SET_CURRENT_LEVEL",
   CHANGE_TO_PREVIOUS_LEVEL = "CHANGE_TO_PREVIOUS_LEVEL",
   DECREMENT_MOVES_LEFT = "DECREMENT_MOVES_LEFT",
   RESTART = "RESTART",
@@ -46,10 +46,10 @@ interface ReducerAction {
   payload?: any;
 }
 
-interface IChangeToNextLevelAction extends ReducerAction {
-  type: ReducerActionKind.CHANGE_TO_NEXT_LEVEL;
+interface ISetLevelAction extends ReducerAction {
+  type: ReducerActionKind.SET_CURRENT_LEVEL;
   payload: {
-    newStage: GAME_LEVELS;
+    level: GAME_LEVELS;
   };
 }
 
@@ -94,7 +94,7 @@ interface IMakeMoveAction extends ReducerAction {
 }
 
 export type ReducerActionsSet =
-  | IChangeToNextLevelAction
+  | ISetLevelAction
   | IChangeToPrevLevelAction
   | ISetMovesLeftAction
   | IMoveToNextLevelAction
@@ -133,8 +133,8 @@ const gameStateReducer = (
   action: ReducerActionsSet
 ): IGameState => {
   switch (action.type) {
-    case ReducerActionKind.CHANGE_TO_NEXT_LEVEL:
-      return { ...state, currentLevel: action.payload.newStage };
+    case ReducerActionKind.SET_CURRENT_LEVEL:
+      return { ...getStateForLevel(state, action.payload.level) };
 
     case ReducerActionKind.CHANGE_TO_PREVIOUS_LEVEL:
       return { ...state, currentLevel: action.payload.newStage };
@@ -255,6 +255,8 @@ const GameContext = React.createContext<{
   resetGame?: () => void;
   moveToNextLevel?: () => void;
   replayLevel?: () => void;
+
+  setCurrentLevel?: (level: GAME_LEVELS) => void;
 }>({ gameState: initialState });
 
 function GameStateProvider({ ...props }) {
@@ -332,6 +334,13 @@ function GameStateProvider({ ...props }) {
     });
   };
 
+  const setCurrentLevel = (level: GAME_LEVELS) => {
+    actionsDispatcher({
+      type: ReducerActionKind.SET_CURRENT_LEVEL,
+      payload: { level },
+    });
+  };
+
   const value = {
     gameState,
     actionsDispatcher,
@@ -339,6 +348,7 @@ function GameStateProvider({ ...props }) {
     resetGame,
     moveToNextLevel,
     replayLevel,
+    setCurrentLevel,
   };
   return <GameContext.Provider value={value} {...props} />;
 }

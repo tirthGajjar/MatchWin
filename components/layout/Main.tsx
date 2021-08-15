@@ -19,8 +19,14 @@ const DynamicScore = dynamic(() => import("components/Timer/Score"), {
 interface Props {}
 
 const Main = (props: Props) => {
-  const { gameState, replayLevel, makeAMove, resetGame, moveToNextLevel } =
-    useGameState();
+  const {
+    gameState,
+    replayLevel,
+    makeAMove,
+    resetGame,
+    moveToNextLevel,
+    setCurrentLevel,
+  } = useGameState();
   return (
     <div>
       <div className="bg-gray-800 pb-32">
@@ -47,6 +53,7 @@ const Main = (props: Props) => {
                 <DynamicLevels
                   passedLevels={gameState.passedLevels}
                   currentLevel={gameState.currentLevel}
+                  setCurrentLevel={setCurrentLevel!}
                 />
                 <DynamicScore score={gameState.currentScore}></DynamicScore>
               </div>
