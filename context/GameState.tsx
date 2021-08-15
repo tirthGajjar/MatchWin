@@ -140,7 +140,7 @@ const gameStateReducer = (
   state: IGameState,
   action: ReducerActionsSet
 ): IGameState => {
-  const { restart } = action.payload;
+  const restart = action.payload?.restart;
   switch (action.type) {
     case ReducerActionKind.SET_CURRENT_LEVEL:
       const stateForCurrentLevel = getStateForLevel(
