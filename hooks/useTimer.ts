@@ -1,4 +1,4 @@
-// taken from https://github.com/amrlabib/react-timer-hook/blob/master/src/useTimer.js
+// derived from https://github.com/amrlabib/react-timer-hook/blob/master/src/useTimer.js
 
 import useInterval from "@/hooks/useInterval";
 import {

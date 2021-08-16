@@ -31,6 +31,7 @@ export enum ReducerActionKind {
   SET_GAME_OVER = "SET_GAME_OVER",
 }
 
+// reducer to execute when user has passed the level and is moving to the next level
 const onLevelWin = (
   state: IGameState,
   restart: RestartTimerAction
@@ -55,26 +56,44 @@ const onLevelWin = (
   };
 };
 
+// reducer to execute when user has clicked to reveal a card
+
 const makeAMoveReducer = (state: IGameState, action: IMakeMoveAction) => {
   const { cardId, uniqueId, start, pause } = action.payload;
+
+  // 1. Find and update card's revealed state
+  // 1.1 find the card to to revealed
   const updatedCardIndex = state.cards.findIndex(
     (card) => card.uniqueId === uniqueId
   );
+
+  // 1.2 create shallow copy of the original state
   const newCards = [...state.cards];
+
+  // 1.3 update the found card's state
   newCards[updatedCardIndex] = {
     ...newCards[updatedCardIndex],
     isRevealed: true,
   };
 
+  // 2. Calculate moves left
   const currentMoves = state.movesLeft;
   let newMovesLeft = currentMoves <= 1 ? 0 : currentMoves - 1;
 
+  // 2.1 if this was the first move in the level -> start the timer
   if (currentMoves === state.movesLimit) {
     start!();
   }
 
+  // 3. Check if the current move was a winning move for the level
   const hasWon = !state.hasWon ? state.revealedCards[cardId] : false;
+
+  // 4. Mark game as over if movesLeft == 0 and the move was not a winning one
   const isGameOver = newMovesLeft > 0 ? state.isGameOver : !hasWon;
+
+  // 5. Pause the timer,
+  // 5.1 if use has won the level
+  // 5.2 or user has run of moves
   if (hasWon || isGameOver) {
     pause!();
   }
@@ -82,14 +101,17 @@ const makeAMoveReducer = (state: IGameState, action: IMakeMoveAction) => {
   const newState = {
     ...state,
     cards: newCards,
+    // set the current card as revealed
     revealedCards: { ...state.revealedCards, [cardId]: true },
     hasWon,
     movesLeft: newMovesLeft,
     isGameOver,
+    // if the user was playing this level for the first time and has won, increase the passedLevels mark
     passedLevels:
       hasWon && state.currentLevel > state.passedLevels
         ? Math.min(10, state.currentLevel)
         : state.passedLevels,
+    // calculate the score, only if the user has won
     currentScore: hasWon
       ? calculateScore(
           state.movesLimit,
@@ -103,6 +125,7 @@ const makeAMoveReducer = (state: IGameState, action: IMakeMoveAction) => {
   return newState;
 };
 
+// reducer to replay a level
 const replayLevelReducer = (state: IGameState, action: IReplayLevelAction) => {
   const { timeLimit, movesLimit } = getConstraints(
     state.currentLevel as GameLevel
@@ -185,11 +208,13 @@ const GameContext = React.createContext<IGameStateContext>({
 });
 
 function GameStateProvider({ ...props }) {
+  // persist the passedLevels and currentScore to localStorage
   const [savedState, saveState] = useLocalStorage("GAME-STATE", {
     passedLevels: 0,
     currentScore: 0,
   });
 
+  // Wrap reducer in order to save the latest values of passedLevels and currentScore to localStorage
   const reducerLocalStorage = useCallback(
     (state, action) => {
       const newState = gameStateReducer(state, action);
@@ -216,8 +241,10 @@ function GameStateProvider({ ...props }) {
     expiryTimestamp: new Date().setSeconds(
       new Date().getSeconds() + gameState.timeLimit
     ),
-    onExpire: () =>
-      actionsDispatcher({ type: ReducerActionKind.SET_GAME_OVER }),
+    onExpire: () => {
+      // set game as over when timer has expired
+      actionsDispatcher({ type: ReducerActionKind.SET_GAME_OVER });
+    },
     autoStart: false,
   });
 
@@ -226,6 +253,7 @@ function GameStateProvider({ ...props }) {
     minutes,
   };
 
+  // action dispatcher to execute when user clicks on the card
   const makeAMove = ({
     cardId,
     uniqueId,
@@ -238,6 +266,7 @@ function GameStateProvider({ ...props }) {
       payload: { cardId, uniqueId, restart, start, pause },
     });
 
+  // action dispatcher to reset the game
   const resetGame = () => {
     restart(
       new Date().setSeconds(new Date().getSeconds() + initialState.timeLimit),

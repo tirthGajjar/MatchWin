@@ -13,41 +13,54 @@ export const generateCards = ({
   difficulty = "EASY",
   level = 1,
 }: IGenerateCardsParams) => {
+  // 1. Get how many cards should be available in each level
   const totalCards = getNumberOfCardsForLevel(level);
-  const unEqualCards = getUnEqualCardsForDifficultyAndLevel(
+
+  // 2. Get unique cards for the given level and difficulty setting
+  const uniqueCards = getUniqueCardsForDifficultyAndLevel(
     links,
     difficulty,
     totalCards
   );
 
-  const duplicatedCards = shuffle(unEqualCards).splice(
+  const numberOfDuplicatedCardsToGenerate =
+    totalCards - uniqueCards.length > 0 ? totalCards - uniqueCards.length : 1;
+
+  // 3. Generate the remaining require cards by picking random cards from the unique cards set
+  const duplicatedCards = shuffle(uniqueCards).splice(
     0,
-    totalCards - unEqualCards.length
+    numberOfDuplicatedCardsToGenerate
   );
 
+  // 4. Concat the duplicated cards and unique cards and shuffle them
   const result = shuffle(
-    unEqualCards
+    uniqueCards
       .concat(duplicatedCards)
       .map((card) => ({ ...card, uniqueId: uniqueId("card-") }))
   );
   return result;
 };
 
+// a very simple implementation for how many cards should be present in a given level
 export const getNumberOfCardsForLevel = (level: GameLevel) => {
   return level * 4;
 };
 
-export const getUnEqualCardsForDifficultyAndLevel = (
+// generate unique cards for a given level and difficulty setting
+export const getUniqueCardsForDifficultyAndLevel = (
   data: CardData[],
   difficulty: "EASY" | "MEDIUM" | "DIFFICULT",
   totalCards: number
 ): CardData[] => {
   switch (difficulty) {
     case "EASY":
+      // for an "EASY" game, 75% of the total cards should be unique
       return data.slice(0, Math.round(totalCards * 0.75));
     case "MEDIUM":
+      // for a "MEDIUM" game, 80% of the total cards should be unique
       return data.slice(0, Math.round(totalCards * 0.8));
     case "DIFFICULT":
+      // for a "DIFFICULT" game, 90% of the total cards should be unique
       return data.slice(0, Math.round(totalCards * 0.9));
   }
 };
