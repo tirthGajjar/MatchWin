@@ -1,5 +1,5 @@
+import Stars from "@/components/misc/Stars";
 import React from "react";
-import Stars from "../Stars";
 
 interface Props {
   score: number;

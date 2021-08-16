@@ -1,5 +1,6 @@
 // taken from https://github.com/amrlabib/react-timer-hook/blob/master/src/useTimer.js
 
+import useInterval from "@/hooks/useInterval";
 import {
   getSecondsFromExpiry,
   getTimeFromSeconds,
@@ -7,7 +8,6 @@ import {
   validateOnExpire,
 } from "@/utils/timer";
 import { useState } from "react";
-import useInterval from "./useInterval";
 
 const DEFAULT_DELAY = 1000;
 function getDelayFromExpiryTimestamp(expiryTimestamp: number) {

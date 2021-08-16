@@ -1,18 +1,17 @@
+import { GameLevel } from "@/types/game";
 import { LockClosedIcon } from "@heroicons/react/outline";
 import clsx from "clsx";
 import React from "react";
-import { GAME_LEVELS } from "../utils/generate-cards";
 
 interface Props {
   passedLevels: number;
   currentLevel: number;
-  setCurrentLevel: (level: GAME_LEVELS) => any;
+  setCurrentLevel: (level: GameLevel) => any;
 }
 
 const levelNames = Array.from({ length: 10 }, (x, i) => i + 1);
 
 const Levels = ({ passedLevels, currentLevel = 0, setCurrentLevel }: Props) => {
-  console.log({ passedLevels });
   return (
     <div className="text-white text-base flex flex-col space-y-2">
       <div className="rounded-md font-medium text-gray-200 text-base">
@@ -30,7 +29,7 @@ const Levels = ({ passedLevels, currentLevel = 0, setCurrentLevel }: Props) => {
                   : "text-2xl bg-green-600 bg-opacity-80 h-10 w-10",
                 "font-mono tracking-widest font-medium rounded-md flex items-center justify-center"
               )}
-              onClick={() => setCurrentLevel(levelName as GAME_LEVELS)}
+              onClick={() => setCurrentLevel(levelName as GameLevel)}
             >
               <span>{levelName}</span>
             </button>

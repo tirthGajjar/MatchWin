@@ -1,1 +1,1 @@
-export * from "./image-links";
+export * from "@/utils/image-links";

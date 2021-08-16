@@ -1,42 +1,12 @@
+import { CardData, GameLevel } from "@/types/game";
+import { IGameState } from "@/types/game-state";
+import { RestartTimerAction } from "@/types/timer";
+import { links } from "@/utils/constants";
 import { shuffle, uniqueId } from "lodash";
-import { IGameState } from "../context/GameState";
-import { links } from "./image-links";
-
-type PrependNextNum<A extends Array<unknown>> = A["length"] extends infer T
-  ? ((t: T, ...a: A) => void) extends (...x: infer X) => void
-    ? X
-    : never
-  : never;
-
-type EnumerateInternal<A extends Array<unknown>, N extends number> = {
-  0: A;
-  1: EnumerateInternal<PrependNextNum<A>, N>;
-}[N extends A["length"] ? 0 : 1];
-
-export type Enumerate<N extends number> = EnumerateInternal<
-  [],
-  N
-> extends (infer E)[]
-  ? E
-  : never;
-
-export type Range<FROM extends number, TO extends number> = Exclude<
-  Enumerate<TO>,
-  Enumerate<FROM>
->;
-
-export type GAME_LEVELS = Range<1, 11>;
-
-export type CardData = {
-  id: number | string;
-  uniqueId?: number | string;
-  src: string;
-  isRevealed: boolean;
-};
 
 interface IGenerateCardsParams {
   difficulty: "EASY" | "MEDIUM" | "DIFFICULT";
-  level: GAME_LEVELS;
+  level: GameLevel;
 }
 
 export const generateCards = ({
@@ -60,12 +30,10 @@ export const generateCards = ({
       .concat(duplicatedCards)
       .map((card) => ({ ...card, uniqueId: uniqueId("card-") }))
   );
-
-  console.log({ totalCards, unEqualCards, result });
   return result;
 };
 
-export const getNumberOfCardsForLevel = (level: GAME_LEVELS) => {
+export const getNumberOfCardsForLevel = (level: GameLevel) => {
   return level * 4;
 };
 
@@ -84,7 +52,7 @@ export const getUnEqualCardsForDifficultyAndLevel = (
   }
 };
 
-export const getConstraints = (level: GAME_LEVELS) => {
+export const getConstraints = (level: GameLevel) => {
   return {
     timeLimit: level * 10,
     movesLimit: level * 2 + 1,
@@ -107,9 +75,9 @@ export const calculateScore = (
 
 export const getStateForLevel = (
   state: IGameState,
-  level: GAME_LEVELS
+  level: GameLevel
 ): IGameState => {
-  const { timeLimit, movesLimit } = getConstraints(level as GAME_LEVELS);
+  const { timeLimit, movesLimit } = getConstraints(level as GameLevel);
 
   return {
     ...state,
@@ -125,4 +93,12 @@ export const getStateForLevel = (
     isGameOver: false,
     currentLevel: level,
   };
+};
+
+export const restartTimer = (
+  restart: RestartTimerAction,
+  timeLimit: number
+) => {
+  typeof restart === "function" &&
+    restart(new Date().setSeconds(new Date().getSeconds() + timeLimit), false);
 };

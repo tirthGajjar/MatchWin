@@ -106,7 +106,7 @@ const ButtonVariantIconStyles = {
   },
 };
 
-export const Button: React.FC<Props> = ({
+const Button: React.FC<Props> = ({
   Icon,
   children,
   type = "PRIMARY",
@@ -131,3 +131,5 @@ export const Button: React.FC<Props> = ({
     </button>
   );
 };
+
+export default Button;
