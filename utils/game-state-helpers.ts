@@ -65,6 +65,7 @@ export const getUniqueCardsForDifficultyAndLevel = (
   }
 };
 
+// generate constraints for each level
 export const getConstraints = (level: GameLevel) => {
   return {
     timeLimit: level * 10,
@@ -72,6 +73,8 @@ export const getConstraints = (level: GameLevel) => {
   };
 };
 
+// calculate score in a non-linear fashion,
+// a better implementation can be to utilize a Long Short Team Memory logic
 export const calculateScore = (
   movesLimit: number,
   movesLeft: number,
