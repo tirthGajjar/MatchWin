@@ -99,6 +99,7 @@ const makeAMoveReducer = (state: IGameState, action: IMakeMoveAction) => {
   if (isGameOver) {
     let stateForLevel = getStateForLevel(state, state.currentLevel);
     restartTimer(action.payload.restart, stateForLevel.timeLimit);
+    return stateForLevel;
   }
 
   // 5. Pause the timer,
