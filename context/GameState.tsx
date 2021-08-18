@@ -53,6 +53,7 @@ const onLevelWin = (
     movesLimit,
     movesLeft: movesLimit,
     hasWon: false,
+    lastOpenedCard: "",
   };
 };
 
@@ -86,10 +87,19 @@ const makeAMoveReducer = (state: IGameState, action: IMakeMoveAction) => {
   }
 
   // 3. Check if the current move was a winning move for the level
-  const hasWon = !state.hasWon ? state.revealedCards[cardId] : false;
+  const hasWon = !state.hasWon
+    ? state.lastOpenedCard !== "" && state.lastOpenedCard === cardId
+    : false;
+
+  let lastOpenedCard = cardId;
 
   // 4. Mark game as over if movesLeft == 0 and the move was not a winning one
-  const isGameOver = newMovesLeft > 0 ? state.isGameOver : !hasWon;
+  let isGameOver = state.lastOpenedCard === "" ? state.isGameOver : !hasWon;
+
+  if (isGameOver) {
+    let stateForLevel = getStateForLevel(state, state.currentLevel);
+    restartTimer(action.payload.restart, stateForLevel.timeLimit);
+  }
 
   // 5. Pause the timer,
   // 5.1 if use has won the level
@@ -106,6 +116,7 @@ const makeAMoveReducer = (state: IGameState, action: IMakeMoveAction) => {
     hasWon,
     movesLeft: newMovesLeft,
     isGameOver,
+    lastOpenedCard: lastOpenedCard,
     // if the user was playing this level for the first time and has won, increase the passedLevels mark
     passedLevels:
       hasWon && state.currentLevel > state.passedLevels
@@ -144,6 +155,7 @@ const replayLevelReducer = (state: IGameState, action: IReplayLevelAction) => {
     movesLeft: movesLimit,
     hasWon: false,
     isGameOver: false,
+    lastOpenedCard: "",
   };
 };
 
@@ -200,6 +212,7 @@ const initialState: IGameState = {
     minutes: 0,
   },
   revealedCards: {},
+  lastOpenedCard: "",
   hasWon: false,
 };
 

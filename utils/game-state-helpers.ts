@@ -2,7 +2,7 @@ import { CardData, GameLevel } from "@/types/game";
 import { IGameState } from "@/types/game-state";
 import { RestartTimerAction } from "@/types/timer";
 import { links } from "@/utils/constants";
-import { shuffle, uniqueId } from "lodash";
+import { uniqueId } from "lodash";
 
 interface IGenerateCardsParams {
   difficulty: "EASY" | "MEDIUM" | "DIFFICULT";
@@ -27,17 +27,15 @@ export const generateCards = ({
     totalCards - uniqueCards.length > 0 ? totalCards - uniqueCards.length : 1;
 
   // 3. Generate the remaining require cards by picking random cards from the unique cards set
-  const duplicatedCards = shuffle(uniqueCards).splice(
+  const duplicatedCards = uniqueCards.slice(
     0,
     numberOfDuplicatedCardsToGenerate
   );
 
   // 4. Concat the duplicated cards and unique cards and shuffle them
-  const result = shuffle(
-    uniqueCards
-      .concat(duplicatedCards)
-      .map((card) => ({ ...card, uniqueId: uniqueId("card-") }))
-  );
+  const result = uniqueCards
+    .concat(duplicatedCards)
+    .map((card) => ({ ...card, uniqueId: uniqueId("card-") }));
   return result;
 };
 
@@ -55,7 +53,7 @@ export const getUniqueCardsForDifficultyAndLevel = (
   switch (difficulty) {
     case "EASY":
       // for an "EASY" game, 75% of the total cards should be unique
-      return data.slice(0, Math.round(totalCards * 0.75));
+      return data.slice(0, Math.round(totalCards * 0.5));
     case "MEDIUM":
       // for a "MEDIUM" game, 80% of the total cards should be unique
       return data.slice(0, Math.round(totalCards * 0.8));
@@ -108,6 +106,8 @@ export const getStateForLevel = (
     hasWon: false,
     isGameOver: false,
     currentLevel: level,
+
+    lastOpenedCard: "",
   };
 };
 

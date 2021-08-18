@@ -19,6 +19,7 @@ export interface IGameState {
   revealedCards: {
     [x: string]: boolean;
   };
+  lastOpenedCard: number | string;
   hasWon: boolean;
 }
 
